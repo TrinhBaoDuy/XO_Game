@@ -1,0 +1,134 @@
+{
+  "ver": "1.0.26",
+  "importer": "image",
+  "imported": true,
+  "uuid": "bcd47f9c-35cb-475f-b6d6-88c7d9fed8ba",
+  "files": [
+    ".json",
+    ".png"
+  ],
+  "subMetas": {
+    "6c48a": {
+      "importer": "texture",
+      "uuid": "bcd47f9c-35cb-475f-b6d6-88c7d9fed8ba@6c48a",
+      "displayName": "0_Fallen_Angels_Hurt_001",
+      "id": "6c48a",
+      "name": "texture",
+      "userData": {
+        "wrapModeS": "clamp-to-edge",
+        "wrapModeT": "clamp-to-edge",
+        "imageUuidOrDatabaseUri": "bcd47f9c-35cb-475f-b6d6-88c7d9fed8ba",
+        "isUuid": true,
+        "visible": false,
+        "minfilter": "linear",
+        "magfilter": "linear",
+        "mipfilter": "none",
+        "anisotropy": 0
+      },
+      "ver": "1.0.22",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "f9941": {
+      "importer": "sprite-frame",
+      "uuid": "bcd47f9c-35cb-475f-b6d6-88c7d9fed8ba@f9941",
+      "displayName": "0_Fallen_Angels_Hurt_001",
+      "id": "f9941",
+      "name": "spriteFrame",
+      "userData": {
+        "trimType": "auto",
+        "trimThreshold": 1,
+        "rotated": false,
+        "offsetX": 19,
+        "offsetY": -20.5,
+        "trimX": 268,
+        "trimY": 190,
+        "width": 402,
+        "height": 561,
+        "rawWidth": 900,
+        "rawHeight": 900,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "packable": true,
+        "pixelsToUnit": 100,
+        "pivotX": 0.5,
+        "pivotY": 0.5,
+        "meshType": 0,
+        "vertices": {
+          "rawPosition": [
+            -201,
+            -280.5,
+            0,
+            201,
+            -280.5,
+            0,
+            -201,
+            280.5,
+            0,
+            201,
+            280.5,
+            0
+          ],
+          "indexes": [
+            0,
+            1,
+            2,
+            2,
+            1,
+            3
+          ],
+          "uv": [
+            268,
+            710,
+            670,
+            710,
+            268,
+            149,
+            670,
+            149
+          ],
+          "nuv": [
+            0.29777777777777775,
+            0.16555555555555557,
+            0.7444444444444445,
+            0.16555555555555557,
+            0.29777777777777775,
+            0.7888888888888889,
+            0.7444444444444445,
+            0.7888888888888889
+          ],
+          "minPos": [
+            -201,
+            -280.5,
+            0
+          ],
+          "maxPos": [
+            201,
+            280.5,
+            0
+          ]
+        },
+        "isUuid": true,
+        "imageUuidOrDatabaseUri": "bcd47f9c-35cb-475f-b6d6-88c7d9fed8ba@6c48a",
+        "atlasUuid": ""
+      },
+      "ver": "1.0.12",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    }
+  },
+  "userData": {
+    "type": "sprite-frame",
+    "fixAlphaTransparencyArtifacts": true,
+    "hasAlpha": true,
+    "redirect": "bcd47f9c-35cb-475f-b6d6-88c7d9fed8ba@f9941"
+  }
+}
