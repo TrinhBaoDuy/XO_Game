@@ -39,7 +39,7 @@ export class ResultManager extends Component {
 
     onClickHome() {
         this.audio.clickButton(SettingData.getInstance().getSound())
-        // director.loadScene(Scene_NAMES.Home)
+        director.loadScene(Scene_NAMES.Home)
         SettingData.getInstance().setResult(false)
         this.isActive(false)
     }

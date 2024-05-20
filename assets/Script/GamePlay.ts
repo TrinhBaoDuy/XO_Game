@@ -1,4 +1,4 @@
-import { _decorator, animation, Button, Canvas, CCInteger, Component, director, instantiate, Label, math, Node, ParticleSystem2D, Prefab, Sprite, SpriteFrame, sys } from 'cc';
+import { _decorator, animation, Button, Canvas, CCInteger, Color, Component, director, instantiate, Label, math, Node, ParticleSystem2D, Prefab, Sprite, SpriteFrame, sys } from 'cc';
 import { Chooser, InformaionIndex } from './InformaionIndex';
 import { Active_Status, Animation_Name, PersonManager } from './PersonManager';
 import { PlayerData } from './PlayerData';
@@ -102,8 +102,10 @@ export class GamePlay extends Component {
                                 this.turnOffTime()
                                 this.numberOfWins++
                                 this.saveLocalData(this.numberOfWins)
-                                this.ResultManager.showResult(PlayerData.getInstance().getPlayerName(), this.Player.getComponent(Sprite).spriteFrame)
-                                this.checkPlayerSelected = false
+                                this.lineWin(Chooser.Player)
+                                this.scheduleOnce(() => {
+                                    this.ResultManager.showResult(PlayerData.getInstance().getPlayerName(), this.Player.getComponent(Sprite).spriteFrame)
+                                }, 1.5)
                             } else {
                                 this.checkPlayerSelected = true
                                 this.turnOffTime()
@@ -131,7 +133,10 @@ export class GamePlay extends Component {
     reSetMap() {
         this.turnOnTime()
         console.log(this.numberOfWins)
-        this.Box_Caro.forEach(box => { box.getComponent(InformaionIndex).setChooser(Chooser.Null) })
+        this.Box_Caro.forEach(box => { 
+            box.getComponent(InformaionIndex).setChooser(Chooser.Null)
+            box.getComponent(Sprite).color = Color.WHITE
+         })
     }
 
     botAI() {
@@ -140,7 +145,8 @@ export class GamePlay extends Component {
             box.emit(EVENT_NAMES.Select, Chooser.Bot)
             this.audio.clickXO(SettingData.getInstance().getSound())
             if (this.gameOver(this.getMatrix(), Chooser.Bot)) {
-                this.ResultManager.showResult('Thua con AI', this.Bot.getComponent(Sprite).spriteFrame)
+                this.lineWin(Chooser.Bot)
+                this.scheduleOnce(() => { this.ResultManager.showResult('Thua con AI', this.Bot.getComponent(Sprite).spriteFrame) }, 1.5)
                 this.checkPlayerSelected = true
                 this.turnOffTime()
             } else {
@@ -303,6 +309,14 @@ export class GamePlay extends Component {
         }
     }
 
+    lineWin(player: Chooser) {
+        let box = this.matrixWin(this.getMatrix(), player)
+        box.forEach(i => {
+            this.Box_Caro[i].getComponent(Sprite).color = player == Chooser.Player ? Color.BLUE : Color.RED
+        })
+
+    }
+
     matrixWin(tempMatrix, player: Chooser) {
         let winbox = []
         // Kiểm tra các hàng
@@ -312,7 +326,9 @@ export class GamePlay extends Component {
                 tempMatrix[i * 3 + 1] === player &&
                 tempMatrix[i * 3 + 2] === player
             ) {
-                return winbox[tempMatrix[i * 3], tempMatrix[i * 3 + 1], tempMatrix[i * 3 + 2]]
+                // return winbox[tempMatrix[i * 3], tempMatrix[i * 3 + 1], tempMatrix[i * 3 + 2]]
+                winbox = [i * 3, i * 3 + 1, i * 3 + 2];
+                return winbox
             }
         }
 
@@ -323,18 +339,24 @@ export class GamePlay extends Component {
                 tempMatrix[i + 3] === player &&
                 tempMatrix[i + 6] === player
             ) {
-                return winbox[tempMatrix[i], tempMatrix[i + 3], tempMatrix[i + 6]]
+                // return winbox[tempMatrix[i], tempMatrix[i + 3], tempMatrix[i + 6]]
+                winbox = [i, i + 3, i + 6];
+                return winbox
             }
         }
 
         // Kiểm tra đường chéo chính
         if (tempMatrix[0] === player && tempMatrix[4] === player && tempMatrix[8] === player) {
-            return winbox[tempMatrix[0], tempMatrix[4], tempMatrix[8]]
+            // return winbox[tempMatrix[0], tempMatrix[4], tempMatrix[8]]
+            winbox = [0, 4, 8];
+            return winbox
         }
 
         // Kiểm tra đường chéo phụ
         if (tempMatrix[2] === player && tempMatrix[4] === player && tempMatrix[6] === player) {
-            return winbox[tempMatrix[2], tempMatrix[4], tempMatrix[6]]
+            // return winbox[tempMatrix[2], tempMatrix[4], tempMatrix[6]]
+            winbox = [2, 4, 6];
+            return winbox
         }
     }
 
