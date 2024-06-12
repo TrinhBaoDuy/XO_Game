@@ -1,4 +1,4 @@
-import { _decorator, Animation, Color, color, Component, easing, Node, Sprite, Tween, tween, Vec3 } from 'cc';
+import { _decorator, Animation, CCInteger, Color, color, Component, easing, Node, Sprite, Tween, tween, UITransform, Vec3, view } from 'cc';
 import { EVENT_NAMES } from './GamePlay';
 const { ccclass, property } = _decorator;
 
@@ -19,8 +19,6 @@ export enum Active_Status {
 
 @ccclass('PersonManager')
 export class PersonManager extends Component {
-    @property({ type: Animation })
-    public Animation: Animation
 
     start() {
         this.node.on(EVENT_NAMES.Status, this.animation, this)
@@ -29,8 +27,8 @@ export class PersonManager extends Component {
     animation(status: Active_Status) {
         switch (status) {
             case Active_Status.Waiting:
-                Tween.stopAllByTarget(this.node)
-                tween(this.node).to(0.3, { scale: new Vec3(0.25, 0.25, 1) }).start();
+                // Tween.stopAllByTarget(this.node)
+                tween(this.node).to(0.3, { scale: new Vec3(0.20, 0.20, 1) }).start();
                 this.node.getComponent(Sprite).color = new Color(145, 145, 145, 255)
                 break
             case Active_Status.TimePlay:
@@ -38,23 +36,13 @@ export class PersonManager extends Component {
                 tween(this.node)
                     .repeatForever(
                         tween()
-                            .by(0.5, { scale: new Vec3(0.05, 0.05, 1) })
-                            .by(0.5, { scale: new Vec3(-0.05, -0.05, 1) })
+                            .by(0.5, { scale: new Vec3(0.025, 0.025, 1) })
+                            .by(0.5, { scale: new Vec3(-0.025, -0.025, 1) })
                     )
                     .start();
                 break
-            case Active_Status.TimeOff:
-                this.Animation.play(Animation_Name.Hurt)
-                break
-            case Active_Status.Loser:
-                this.Animation.play(Animation_Name.Dying)
-                break
-            case Active_Status.Winer:
-                this.Animation.play(Animation_Name.Slash)
-                break
         }
     }
-
 }
 
 

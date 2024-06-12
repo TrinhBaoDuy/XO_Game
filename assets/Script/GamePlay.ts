@@ -1,4 +1,4 @@
-import { _decorator, animation, Button, Canvas, CCInteger, Color, Component, director, instantiate, Label, math, Node, ParticleSystem2D, Prefab, Sprite, SpriteFrame, sys } from 'cc';
+import { _decorator, animation, Button, Canvas, CCInteger, Color, Component, director, Game, instantiate, Label, math, native, Node, ParticleSystem2D, Prefab, Sprite, SpriteFrame, sys } from 'cc';
 import { Chooser, InformaionIndex } from './InformaionIndex';
 import { Active_Status, Animation_Name, PersonManager } from './PersonManager';
 import { PlayerData } from './PlayerData';
@@ -14,22 +14,30 @@ export const EVENT_NAMES = {
     Bot_Turn: 'Bot Turn',
     Retry: 'Retry Game',
     Home: 'Come Home Game',
+    TEST: 'TEST',
 }
+
+export const Bot_name = 'Thua con AI'
+export const WINSTREAK = 'WINNIG STREAK : '
 
 @ccclass('GamePlay')
 export class GamePlay extends Component {
     @property({ type: Prefab })
     private Map_Caro: Prefab
-    private Box_Caro: Node[] = []
+    private static Box_Caro: Node[] = []
     @property({ type: CCInteger })
     public winNumber: number = 3
-    private numberOfWins: number = 0
+    public static numberOfWins: number = 0
 
     @property({ type: Node })
     public player_index: Node
-    private Player: Node
+    private static Player: Node
     @property({ type: Node })
-    public Bot: Node
+    private Bot_static: Node
+    private static Bot: Node
+
+    private static broads: String[] = []
+    private static boxEnd
 
     @property({ type: CCInteger })
     public time_secon: number = 60
@@ -38,29 +46,30 @@ export class GamePlay extends Component {
     private time_game: number = 0
 
     private playerSelectedBox: InformaionIndex[] = []
-    private checkPlayerSelected: boolean = false
+    private static checkPlayerSelected: boolean = false
 
     @property({ type: ResultManager })
     public ResultManager: ResultManager
-
+    private static result
+    @property({ type: Label })
+    private winstreak: Label
     private audio: AudioManager
-
-    // @property({ type: Node })
-    // private animation_win: Node
 
     start() {
         this.audio = this.node.getComponent(AudioManager)
-        // this.WinSceneManager = this.node.getComponent(WinSceneManager)
+        this.audio.clickMusic(false)
+        GamePlay.result = this.ResultManager
+        GamePlay.Bot = this.Bot_static
         this.createMap()
         this.turnOnTime()
-        // this.node.on(EVENT_NAMES.Bot_Turn, this.botPlayGame, this)
-        this.ResultManager.node.on(EVENT_NAMES.Retry, this.onRetry, this)
+        GamePlay.result.node.on(EVENT_NAMES.Retry, this.onRetry, this)
+        this.winstreak.string = WINSTREAK + 0
     }
 
     saveLocalData(point: number) {
-        const dataToSave = { person: this.Player.name, point: point };
+        const dataToSave = { person: GamePlay.Player.name, point: point };
         if (sys.localStorage) {
-            sys.localStorage.setItem(this.Player.name, JSON.stringify(dataToSave));
+            sys.localStorage.setItem(GamePlay.Player.name, JSON.stringify(dataToSave));
             console.log('Dữ liệu đã được lưu trữ cục bộ thành công.');
         } else {
             console.error('Trình duyệt không hỗ trợ lưu trữ cục bộ.');
@@ -68,7 +77,7 @@ export class GamePlay extends Component {
     }
 
     removePlayer() {
-        this.Player.destroy()
+        GamePlay.Player.destroy()
     }
 
     removeMap() {
@@ -79,50 +88,29 @@ export class GamePlay extends Component {
         let map = instantiate(this.Map_Caro)
         if (map) {
             this.node.addChild(map)
-            this.Box_Caro = map.children
+            GamePlay.Box_Caro = map.children
             this.player_index.getChildByName(PlayerData.getInstance().getPlayerName()).active = true
         }
         if (this.player_index.getChildByName(PlayerData.getInstance().getPlayerName()).active) {
-            this.Player = this.player_index.getChildByName(PlayerData.getInstance().getPlayerName())
-            this.Player.getComponent(PersonManager).animation(Active_Status.TimePlay)
-            this.Bot.getComponent(PersonManager).animation(Active_Status.Waiting)
-            this.numberOfWins = PlayerData.getInstance().getPoint()
+            GamePlay.Player = this.player_index.getChildByName(PlayerData.getInstance().getPlayerName())
+            GamePlay.round(Chooser.Player)
+            GamePlay.numberOfWins = 0;
             console.log(PlayerData.getInstance())
         }
-        if (this.Box_Caro) {
-            this.Box_Caro.forEach((m, i) => {
-                m.on(Node.EventType.MOUSE_DOWN, (event) => {
-                    if (!this.checkPlayerSelected) {
+        if (GamePlay.Box_Caro) {
+            GamePlay.Box_Caro.forEach((m, i) => {
+                m.on(Node.EventType.TOUCH_START, (event) => {
+                    if (!GamePlay.checkPlayerSelected) {
                         if (m.getComponent(InformaionIndex).value === Chooser.Null) {
                             m.emit(EVENT_NAMES.Select, Chooser.Player)
-                            this.audio.clickXO(SettingData.getInstance().getSound())
+                            this.audio.clickXO(SettingData.getInstance().getSound(), true)
+                            GamePlay.broads.push(m.name)
                             this.playerSelectedBox.push(m.getComponent(InformaionIndex))
-                            if (this.gameOver(this.getMatrix(), Chooser.Player)) {
-                                this.checkPlayerSelected = true
-                                this.turnOffTime()
-                                this.numberOfWins++
-                                this.saveLocalData(this.numberOfWins)
-                                this.lineWin(Chooser.Player)
-                                this.scheduleOnce(() => {
-                                    this.ResultManager.showResult(PlayerData.getInstance().getPlayerName(), this.Player.getComponent(Sprite).spriteFrame)
-                                }, 1.5)
-                            } else {
-                                this.checkPlayerSelected = true
-                                this.turnOffTime()
-                                this.turnOnBotPlayGame()
-                            }
+                            this.checkPlayer()
                         } else {
                             console.log('hk cho')
                             // this.Player.getComponent(PersonManager).node.emit(EVENT_NAMES.Status, Active_Status.TimeOff)
                             // this.scheduleOnce(this.Player.getComponent(PersonManager).node.emit(EVENT_NAMES.Status, Active_Status.TimePlay), this.Player.getComponent(PersonManager).Animation.clips.find(a => a.name === Animation_Name.Hurt).duration)
-                        }
-                        if (this.Box_Caro.every(box => box.getComponent(InformaionIndex).value !== Chooser.Null)) {
-                            this.turnOffTime()
-                            this.reSetMap();
-                            this.Player.getComponent(PersonManager).animation(Active_Status.Waiting)
-                            this.checkPlayerSelected = true
-                            this.Bot.getComponent(PersonManager).animation(Active_Status.TimePlay)
-                            this.turnOnBotPlayGame()
                         }
                     }
                 })
@@ -130,51 +118,77 @@ export class GamePlay extends Component {
         }
     }
 
+    checkPlayer() {
+        if (this.gameOver(GamePlay.getMatrix(), Chooser.Player)) {
+            GamePlay.checkPlayerSelected = true
+            this.turnOffTime()
+            GamePlay.numberOfWins++
+            this.lineWin(Chooser.Player)
+            this.winstreak.string = WINSTREAK + GamePlay.numberOfWins
+            this.audio.soundWinner(SettingData.getInstance().getSound())
+            if (GamePlay.numberOfWins > PlayerData.getInstance().getPoint()) {
+                this.saveLocalData(GamePlay.numberOfWins)
+                this.audio.soundBravo(SettingData.getInstance().getSound())
+                this.scheduleOnce(() => {
+                    GamePlay.result.showResult(PlayerData.getInstance().getPlayerName(), GamePlay.Player.getComponent(Sprite).spriteFrame)
+                }, 1.5)
+            } else {
+                this.scheduleOnce(() => {
+                    this.reSetMap()
+                    GamePlay.round(Chooser.Player)
+                }, 1)
+            }
+        } else {
+            GamePlay.checkPlayerSelected = true
+            this.turnOffTime()
+            this.turnOnBotPlayGame()
+            if (GamePlay.Box_Caro.every(box => box.getComponent(InformaionIndex).value !== Chooser.Null)) {
+                this.reSetMap();
+            }
+        }
+    }
+
     reSetMap() {
         this.turnOnTime()
-        console.log(this.numberOfWins)
-        this.Box_Caro.forEach(box => { 
+        GamePlay.Box_Caro.forEach(box => {
             box.getComponent(InformaionIndex).setChooser(Chooser.Null)
             box.getComponent(Sprite).color = Color.WHITE
-         })
+        })
     }
 
     botAI() {
         let box = this.blockBoxCanWin(PlayerData.getInstance().getLevel())
+        console.log("tới lược bot", box)
         if (box) {
             box.emit(EVENT_NAMES.Select, Chooser.Bot)
-            this.audio.clickXO(SettingData.getInstance().getSound())
-            if (this.gameOver(this.getMatrix(), Chooser.Bot)) {
+            GamePlay.broads.push(box.name)
+            this.audio.clickXO(SettingData.getInstance().getSound(), false)
+            if (this.gameOver(GamePlay.getMatrix(), Chooser.Bot)) {
                 this.lineWin(Chooser.Bot)
-                this.scheduleOnce(() => { this.ResultManager.showResult('Thua con AI', this.Bot.getComponent(Sprite).spriteFrame) }, 1.5)
-                this.checkPlayerSelected = true
+                GamePlay.boxEnd = box
+                this.audio.soundLose(SettingData.getInstance().getSound())
+                this.scheduleOnce(() => { GamePlay.result.showResult(Bot_name, GamePlay.Bot.getComponent(Sprite).spriteFrame) }, 1.5)
+                GamePlay.checkPlayerSelected = true
                 this.turnOffTime()
             } else {
-                this.Player.getComponent(PersonManager).animation(Active_Status.TimePlay)
-                this.Bot.getComponent(PersonManager).animation(Active_Status.Waiting)
-                this.checkPlayerSelected = false
+                GamePlay.round(Chooser.Player)
                 this.turnOffTime()
                 this.turnOnTime()
-            }
-            if (this.Box_Caro.every(box => box.getComponent(InformaionIndex).value !== Chooser.Null)) {
-                this.reSetMap();
-                this.checkPlayerSelected = false
-                this.Bot.getComponent(PersonManager).animation(Active_Status.Waiting)
-                this.Player.getComponent(PersonManager).animation(Active_Status.TimePlay)
-                this.turnOffTime()
-                this.turnOnTime()
+                if (GamePlay.Box_Caro.every(box => box.getComponent(InformaionIndex).value !== Chooser.Null)) {
+                    this.reSetMap();
+                    GamePlay.round(Chooser.Player)
+                }
             }
         }
     }
 
     turnOnBotPlayGame() {
         this.turnOnTime()
-        this.Bot.getComponent(PersonManager).animation(Active_Status.TimePlay)
-        this.Player.getComponent(PersonManager).animation(Active_Status.Waiting)
+        GamePlay.round(Chooser.Bot)
         this.scheduleOnce(this.botAI, math.randomRangeInt(this.time_secon / 5, this.time_secon / 2))
     }
 
-    getMatrix() {
+    private static getMatrix() {
         let matrix = []
         this.Box_Caro.forEach((m) => {
             matrix.push(m.getComponent(InformaionIndex).value);
@@ -183,7 +197,7 @@ export class GamePlay extends Component {
     }
 
     blockBoxCanWin(level: string) {
-        let matrix = this.getMatrix()
+        let matrix = GamePlay.getMatrix()
         let block = [];
         let blockingMoveFound = false;
         let blockingMoveWin = false;
@@ -195,7 +209,7 @@ export class GamePlay extends Component {
                         tempMatrix[i] = Chooser.Bot;
                         let isBlockingMove = this.gameOver(tempMatrix, Chooser.Bot);
                         if (isBlockingMove) {
-                            block.push(this.Box_Caro[i]);
+                            block.push(GamePlay.Box_Caro[i]);
                             blockingMoveWin = true;
                         }
                     }
@@ -208,21 +222,21 @@ export class GamePlay extends Component {
                         let isBlockingMove = this.gameOver(tempMatrix, Chooser.Player);
                         if (isBlockingMove) {
                             if (!blockingMoveWin)
-                                block.push(this.Box_Caro[i]);
+                                block.push(GamePlay.Box_Caro[i]);
                             blockingMoveFound = true;
                         }
                     }
                 }
             case Level.Easy:
                 if (!blockingMoveFound && !blockingMoveWin) {
-                    this.Box_Caro.forEach((box, i) => {
+                    GamePlay.Box_Caro.forEach((box, i) => {
                         if (box.getComponent(InformaionIndex).value === Chooser.Null) {
-                            block.push(this.Box_Caro[i]);
+                            block.push(GamePlay.Box_Caro[i]);
                         }
                     });
                 }
         }
-        console.log(block)
+        // console.log(block)
         return block[math.randomRangeInt(0, block.length)];
     }
 
@@ -265,12 +279,25 @@ export class GamePlay extends Component {
     playTime() {
         let minute = Math.floor(this.time_game / 60);
         let second = this.time_game % 60;
-        this.time_node.string = '0.' + minute + '  :  ' + second;
+        if(second<10){
+            this.time_node.string = '0.' + minute + '  :  0.' + second;
+        }else{
+            this.time_node.string = '0.' + minute + '  :  ' + second;
+        }
         this.time_game -= 1;
+        if (second < 4 && minute == 0) {
+            this.time_node.color = Color.RED
+            this.audio.soundOneSecond(SettingData.getInstance().getSound())
+        } else {
+            this.time_node.color = Color.WHITE
+        }
         if (second == 0 && minute == 0) {
-            this.checkPlayerSelected = true
-            this.turnOffTime()
-            this.turnOnBotPlayGame()
+            this.audio.soundDoneTime(SettingData.getInstance().getSound())
+            GamePlay.checkPlayerSelected = true
+            this.blockBoxCanWin(Level.Hard).emit(EVENT_NAMES.Select, Chooser.Player)
+            this.checkPlayer()
+            // this.turnOffTime()
+            // this.turnOnBotPlayGame()
         }
     }
 
@@ -279,6 +306,7 @@ export class GamePlay extends Component {
         let minute = Math.floor(this.time_game / 60);
         let second = this.time_game % 60;
         this.time_node.string = '0.' + minute + '  :  ' + second;
+        this.time_node.color = Color.WHITE
         this.time_game--
         this.schedule(this.playTime, 1)
     }
@@ -289,15 +317,14 @@ export class GamePlay extends Component {
 
     onRetry() {
         this.reSetMap()
-        if (!this.checkPlayerSelected) {
-            this.Bot.getComponent(PersonManager).node.emit(EVENT_NAMES.Status, Active_Status.Waiting)
-            this.Player.getComponent(PersonManager).node.emit(EVENT_NAMES.Status, Active_Status.TimePlay)
+        if (!GamePlay.checkPlayerSelected) {
+            GamePlay.round(Chooser.Player)
         }
         else {
-            this.Bot.getComponent(PersonManager).node.emit(EVENT_NAMES.Status, Active_Status.TimePlay)
-            this.Player.getComponent(PersonManager).node.emit(EVENT_NAMES.Status, Active_Status.Waiting)
+            GamePlay.round(Chooser.Bot)
             this.turnOnBotPlayGame()
         }
+        this.winstreak.string = WINSTREAK + GamePlay.numberOfWins
     }
 
     onClickBack() {
@@ -307,14 +334,17 @@ export class GamePlay extends Component {
             // this.turnOffTime()
             // this.sound.onMusic(false)
         }
+        ///hoi lay lai nha
     }
 
     lineWin(player: Chooser) {
-        let box = this.matrixWin(this.getMatrix(), player)
-        box.forEach(i => {
-            this.Box_Caro[i].getComponent(Sprite).color = player == Chooser.Player ? Color.BLUE : Color.RED
+        let box = this.matrixWin(GamePlay.getMatrix(), player)
+        GamePlay.Box_Caro.forEach(b => {
+            b.getComponent(Sprite).color = Color.GRAY
         })
-
+        box.forEach(i => {
+            GamePlay.Box_Caro[i].getComponent(Sprite).color = player == Chooser.Player ? Color.WHITE : Color.RED
+        })
     }
 
     matrixWin(tempMatrix, player: Chooser) {
@@ -360,6 +390,56 @@ export class GamePlay extends Component {
         }
     }
 
+    static round(chooser: Chooser) {
+        switch (chooser) {
+            case Chooser.Player:
+                // console.log('checkkkkkkkkkkkkkk')
+                this.Player.getComponent(PersonManager).animation(Active_Status.TimePlay);
+                this.Bot.getComponent(PersonManager).animation(Active_Status.Waiting);
+                GamePlay.checkPlayerSelected = false;
+                break;
+            case Chooser.Bot:
+                this.Player.getComponent(PersonManager).animation(Active_Status.Waiting);
+                this.Bot.getComponent(PersonManager).animation(Active_Status.TimePlay);
+                GamePlay.checkPlayerSelected = true;
+                break;
+        }
+    }
+
+    public static returnroad() {
+        GamePlay.Box_Caro.forEach(m => {
+            m.getComponent(Sprite).color = Color.WHITE
+        })
+        for (let i = GamePlay.broads.length - 1; i >= 0; i--) {
+            const matchingBox = GamePlay.Box_Caro.find(m => m.name === GamePlay.broads[i]);
+            if (matchingBox) {
+                matchingBox.getComponent(InformaionIndex).setChooser(Chooser.Null);
+                GamePlay.broads.splice(i, 1);
+                const matchingBox2 = GamePlay.Box_Caro.find(m => m.name === GamePlay.broads[i - 1])
+                if (matchingBox2 && matchingBox2.getComponent(InformaionIndex).value != matchingBox.getComponent(InformaionIndex).value) {
+                    matchingBox2.getComponent(InformaionIndex).setChooser(Chooser.Null)
+                    GamePlay.broads.splice(i - 1, 1);
+                    return
+                }
+            }
+        }
+    }
+
+    public static callByNative() {
+        PlayerData.getInstance().setLimitAdViews(PlayerData.getInstance().getLimitAdViews() - 1)
+        this.returnroad()
+        SettingData.getInstance().setResult(false)
+        GamePlay.round(Chooser.Player)
+        GamePlay.result.onShowAdmobFinish()
+        GamePlay.boxEnd.getComponent(InformaionIndex).canWin()
+    }
 }
 
+declare global {
+    interface Window {
+        GamePlay: typeof GamePlay;
+    }
+}
+
+window.GamePlay = GamePlay;
 

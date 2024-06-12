@@ -7,7 +7,7 @@ export class SettingData {
   
     private constructor() {
       this.sound = true;
-      this.music = true;
+      this.music = false;
       this.setting = false;
       this.result = false;
     }

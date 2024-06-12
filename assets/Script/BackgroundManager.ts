@@ -14,6 +14,9 @@ export class BackgroundManager extends Component {
         const scaleY = screenSize.height / backgroundTransform.height;
 
         this.node.setScale(scaleY, scaleY);
+        this.node.children.forEach(c => {
+            c.setScale(scaleY, scaleY)
+        })
     }
 }
 // nếu w < h => scale background

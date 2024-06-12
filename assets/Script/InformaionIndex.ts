@@ -1,4 +1,4 @@
-import { _decorator, CCInteger, Component, Node, Sprite, SpriteFrame } from 'cc';
+import { _decorator, CCInteger, Component, Node, Sprite, SpriteFrame, Tween, tween, Vec3 } from 'cc';
 import { EVENT_NAMES } from './GamePlay';
 const { ccclass, property } = _decorator;
 
@@ -25,10 +25,11 @@ export class InformaionIndex extends Component {
     private Null: SpriteFrame
 
     start() {
-        this.node.on(EVENT_NAMES.Select,this.setChooser,this)
+        this.node.on(EVENT_NAMES.Select, this.setChooser, this)
     }
 
     setChooser(chooser: Chooser) {
+        Tween.stopAll()
         this.value = chooser
         switch (chooser) {
             case Chooser.Null:
@@ -43,8 +44,20 @@ export class InformaionIndex extends Component {
         }
     }
 
-    update(deltaTime: number) {
-
+    canWin() {
+        tween(this.node)
+            .repeatForever(
+                tween()
+                    .by(0.5, { scale: new Vec3(0.05, 0.05, 1) })
+                    .call(() => {
+                        this.node.getComponent(Sprite).spriteFrame = this.Player;
+                    })
+                    .by(0.5, { scale: new Vec3(-0.05, -0.05, 1) })
+                    .call(() => {
+                        this.node.getComponent(Sprite).spriteFrame = this.Null;
+                    })
+            )
+            .start();
     }
 }
 
